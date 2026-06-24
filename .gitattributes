@@ -1,0 +1,9 @@
+# Normalise line endings: LF in the repo, auto on checkout.
+* text=auto eol=lf
+
+# Treat data/binary artefacts as binary.
+*.png binary
+*.pkl binary
+*.parquet binary
+*.geojson binary
+*.csv binary

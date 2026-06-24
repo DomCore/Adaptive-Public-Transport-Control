@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+title: >-
+  Adaptive Public-Transport Control: a Bayesian Belief Network, risk-aware A*
+  and CPD-aware data augmentation pipeline
+message: >-
+  If you use this software, please cite both the software and the
+  accompanying dissertation.
+type: software
+authors:
+  - given-names: Vladyslav
+    family-names: Zetchenko
+    affiliation: Chernihiv Polytechnic National University
+abstract: >-
+  Reference implementation of the methods proposed in the dissertation
+  "Methods and information technology for adaptive control of urban public
+  transport". The pipeline trains a Bayesian Belief Network on the NY Bus
+  Breakdown dataset, transfers the resulting overload-probability signal onto
+  the Prague public-transport stop network, and feeds it into a risk-aware A*
+  route planner. It also includes a comparison of tabular data-augmentation
+  methods (Random Oversampling, SMOTE, ADASYN, GAN) and an adaptive
+  decision-making module mapping overload probability to control actions.
+keywords:
+  - bayesian belief network
+  - A* search
+  - public transport
+  - route optimization
+  - data augmentation
+  - GAN
+  - SMOTE
+license: MIT

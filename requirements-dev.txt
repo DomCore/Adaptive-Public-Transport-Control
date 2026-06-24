@@ -1,0 +1,7 @@
+# Development / testing dependencies.
+#   pip install -r requirements.txt
+#   pip install -r requirements-dev.txt
+#   pytest
+
+-r requirements.txt
+pytest==7.4.4

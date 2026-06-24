@@ -1,0 +1,21 @@
+# Core pipeline (steps 00-05) + decision module.
+# Tested on Python 3.9-3.11.
+
+# Data handling
+pandas==2.1.4
+numpy==1.26.4
+scipy==1.11.4
+pyarrow==14.0.2          # parquet I/O
+
+# Bayesian network (exact inference via Variable Elimination)
+pgmpy==0.1.25
+
+# Geospatial + clustering
+geopy==2.4.1
+scikit-learn==1.3.2
+
+# Visualisation
+matplotlib==3.8.2
+
+# UX
+tqdm==4.66.1

@@ -1,0 +1,11 @@
+# Extra dependency for the GAN augmentation experiment only
+# (augmentation/compare_augmentation.py). The core pipeline does NOT need this.
+#
+# Install on top of the root requirements.txt:
+#   pip install -r requirements.txt
+#   pip install -r augmentation/requirements-gan.txt
+#
+# If the GPU build fails to install, use the CPU wheel instead:
+#   pip install tensorflow-cpu==2.15.0
+
+tensorflow==2.15.0
