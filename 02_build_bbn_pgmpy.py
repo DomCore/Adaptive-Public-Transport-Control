@@ -54,7 +54,37 @@ def build_model(df: pd.DataFrame) -> BayesianNetwork:
         df[BBN_NODES],
         estimator=MaximumLikelihoodEstimator,
     )
+    repair_unobserved_cpds(model)
     return model
+
+
+def repair_unobserved_cpds(model: BayesianNetwork) -> None:
+    """
+    Замінює NaN-стовпці у CPD рівномірним розподілом.
+
+    Для вузлів з кількома батьками (How_Long_Delayed ← Reason, Boro;
+    Has_Contractor_Notified_Schools ← overload, School_Age_or_PreK) окремі
+    комбінації значень батьків можуть не зустрічатись у даних. MaximumLikelihood
+    лишає для таких комбінацій NaN (0/0). Ми присвоюємо їм рівномірний розподіл
+    (неінформативний пріор), щоб check_model() проходив.
+
+    Ядрові вузли (overload, Reason) не мають неспостережених комбінацій батьків,
+    тому їхні CPD лишаються незмінними — результати маршрутизації зберігаються.
+    """
+    import numpy as np
+    repaired = []
+    for cpd in model.get_cpds():
+        values_2d = cpd.get_values()              # форма (var_card, n_parent_configs)
+        col_sums = values_2d.sum(axis=0)
+        bad = np.isnan(col_sums) | (col_sums == 0)
+        if bad.any():
+            values_2d[:, bad] = 1.0 / values_2d.shape[0]
+            cpd.values = values_2d.reshape(cpd.cardinality)
+            repaired.append((cpd.variable, int(bad.sum())))
+    if repaired:
+        print("[02] Відремонтовано неспостережені CPD-комбінації (рівномірний пріор):")
+        for var, n in repaired:
+            print(f"       {var}: {n} комбінацій")
 
 
 def validate(model: BayesianNetwork) -> dict:

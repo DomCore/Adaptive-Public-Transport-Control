@@ -89,6 +89,7 @@ def load_and_clean(path) -> pd.DataFrame:
         "How_Long_Delayed",
         "Occurred_On",
         "School_Age_or_PreK",
+        "Has_Contractor_Notified_Schools",
         "Number_Of_Students_On_The_Bus",
     ]
     df = pd.read_csv(path, usecols=lambda c: c in cols, low_memory=False)
@@ -142,11 +143,39 @@ def add_temporal_nodes(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def add_delay_category(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Дискретизує тривалість затримки у категоріальний вузол How_Long_Delayed.
+
+    Сире текстове поле How_Long_Delayed парситься у хвилини
+    (parse_delay_minutes) і бінується у 4 категорії. Цей вузол є нащадком
+    Reason у БМД (а не предком overload), тому НЕ впливає на маршрутизацію —
+    додається для відповідності концептуальній структурі (підрозділ 2.2.2).
+    """
+    print("[01] Додавання вузла 'How_Long_Delayed' (дискретизація затримки) ...")
+    minutes = df["How_Long_Delayed"].apply(parse_delay_minutes)
+
+    def to_bin(m: float) -> str:
+        if m <= 0:
+            return "none"      # порожнє поле = не було тривалої затримки
+        if m <= 15:
+            return "short"     # 0–15 хв
+        if m <= 40:
+            return "medium"    # 15–40 хв
+        return "long"          # 40+ хв
+
+    df["How_Long_Delayed"] = minutes.apply(to_bin)
+    print(f"     How_Long_Delayed розподіл:\n"
+          f"{df['How_Long_Delayed'].value_counts().to_string()}")
+    return df
+
+
 def encode_categorical(df: pd.DataFrame) -> pd.DataFrame:
     """Заповнюємо NaN значенням 'Unknown' і приводимо до str для pgmpy."""
     print("[01] Кодування категоріальних ...")
     cat_cols = ["Boro", "Reason", "Breakdown_or_Running_Late",
-                "TimeOfDay", "DayOfWeek"]
+                "TimeOfDay", "DayOfWeek", "School_Age_or_PreK",
+                "Has_Contractor_Notified_Schools", "How_Long_Delayed"]
     for col in cat_cols:
         if col in df.columns:
             df[col] = df[col].fillna("Unknown").astype(str)
@@ -154,11 +183,12 @@ def encode_categorical(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def select_final_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Залишаємо тільки те, що йде в BBN + кілька допоміжних."""
+    """Залишаємо тільки 8 вузлів BBN + допоміжний Breakdown_or_Running_Late."""
     keep = [
-        "Boro", "TimeOfDay", "DayOfWeek",
-        "Reason", "Breakdown_or_Running_Late",
-        "overload", "delay_min",
+        "TimeOfDay", "DayOfWeek", "Boro", "School_Age_or_PreK",
+        "Reason", "overload", "How_Long_Delayed",
+        "Has_Contractor_Notified_Schools",
+        "Breakdown_or_Running_Late",
     ]
     keep = [c for c in keep if c in df.columns]
     return df[keep].copy()
@@ -168,13 +198,15 @@ def main():
     df = load_and_clean(INPUT_CSV)
     df = add_overload_node(df)
     df = add_temporal_nodes(df)
+    df = add_delay_category(df)
     df = encode_categorical(df)
     df = select_final_columns(df)
 
-    # Видаляємо рядки з пропусками у ключових колонках для BBN
+    # Видаляємо рядки з пропусками у ключових колонках ядра BBN.
+    # ВАЖЛИВО: набір умов фільтрації не змінюється при розширенні мережі —
+    # це гарантує однаковий набір рядків і, як наслідок, незмінні CPD вузлів
+    # overload та Reason (а отже — незмінні результати маршрутизації).
     before = len(df)
-    # Boro з NY Bus майже завжди Unknown (98%) — це вузол ми не використовуємо в BBN.
-    # Викидаємо записи без явної причини або події.
     df = df.dropna(subset=["overload", "TimeOfDay", "Reason", "Breakdown_or_Running_Late"])
     df = df[df["Reason"] != "Unknown"]
     df = df[df["Breakdown_or_Running_Late"] != "Unknown"]

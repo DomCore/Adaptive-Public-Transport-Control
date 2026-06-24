@@ -60,20 +60,39 @@ TIME_OF_DAY_BINS = [
 
 
 # ---------- Bayesian Belief Network ----------
-# Multi-parent structure: TimeOfDay and Reason both feed `overload`, which gives
-# the conditional distributions a non-trivial spread (dissertation section 3.4.5).
+# Eight-node multi-parent network (dissertation sections 2.2.2 and 3.4.5).
+#
+# The "core" sub-network that drives routing is unchanged:
+#     TimeOfDay, Reason -> overload      (with Reason <- TimeOfDay, DayOfWeek)
+# Because the A* pipeline only ever queries P(overload | TimeOfDay, Reason) — i.e.
+# conditions on BOTH parents of `overload` — that probability is a direct CPD
+# lookup and is d-separated from everything else. The four extra nodes below are
+# therefore added strictly as descendants / non-ancestors of `overload` and
+# `Reason`, so every routing number and the marginal smoke-test are preserved
+# exactly while the network matches the conceptual model in section 2.2.2.
+# Every node has at most two parents, so the treewidth stays 2 (claim "w = 2").
 BBN_NODES = [
     "TimeOfDay",
     "DayOfWeek",
+    "Boro",
+    "School_Age_or_PreK",
     "Reason",
     "overload",
+    "How_Long_Delayed",
+    "Has_Contractor_Notified_Schools",
 ]
 
 BBN_EDGES = [
+    # --- core (drives routing; do NOT change without re-validating results) ---
     ("TimeOfDay", "Reason"),    # time of day influences the type of failure
     ("DayOfWeek", "Reason"),    # day of week influences the type of failure
     ("TimeOfDay", "overload"),  # time of day directly influences overload
     ("Reason", "overload"),     # failure cause directly influences overload
+    # --- consequence / context layer (descendants; result-preserving) ---
+    ("Reason", "How_Long_Delayed"),  # cause shapes the delay duration
+    ("Boro", "How_Long_Delayed"),    # borough (traffic, geography) shapes duration
+    ("overload", "Has_Contractor_Notified_Schools"),       # severity -> notify
+    ("School_Age_or_PreK", "Has_Contractor_Notified_Schools"),  # school type -> notify
 ]
 
 
