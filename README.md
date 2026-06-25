@@ -4,6 +4,8 @@ Reference implementation for the dissertation *"Methods and information
 technology for adaptive control of urban public transport"*
 (V. Zetchenko, Chernihiv Polytechnic National University).
 
+Repository: <https://github.com/DomCore/Adaptive-Public-Transport-Control>
+
 The system couples three components into a single, reproducible pipeline:
 
 1. **Bayesian Belief Network (BBN)** — predicts the probability that a stop /
@@ -71,6 +73,9 @@ adaptive-transit-control/
 Python 3.9–3.11.
 
 ```bash
+git clone https://github.com/DomCore/Adaptive-Public-Transport-Control.git
+cd Adaptive-Public-Transport-Control
+
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt

@@ -6,6 +6,8 @@ message: >-
   If you use this software, please cite both the software and the
   accompanying dissertation.
 type: software
+repository-code: "https://github.com/DomCore/Adaptive-Public-Transport-Control"
+url: "https://github.com/DomCore/Adaptive-Public-Transport-Control"
 authors:
   - given-names: Vladyslav
     family-names: Zetchenko
