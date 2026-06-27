@@ -1,3 +1,56 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "transit-control"
+version = "0.2.0"
+description = "Adaptive public-transport control: Bayesian Belief Network, risk-aware A* and an adaptive decision module, exposed as a CLI and a dashboard."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Vladyslav Zetchenko" },
+]
+keywords = ["bayesian-network", "a-star", "public-transport", "route-optimization"]
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "pyarrow>=12.0",
+    "pgmpy==0.1.25",
+    "geopy>=2.4",
+    "scikit-learn>=1.3",
+    "matplotlib>=3.7",
+    "tqdm>=4.65",
+    "typer>=0.9",
+]
+
+[project.optional-dependencies]
+# Interactive dashboard (transit-control serve). Kept optional so the core
+# library and CLI install without a web stack.
+app = [
+    "streamlit>=1.30",
+    "pydeck>=0.8",
+]
+dev = [
+    "pytest>=7.4",
+]
+
+[project.scripts]
+transit-control = "transit.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/DomCore/Adaptive-Public-Transport-Control"
+Repository = "https://github.com/DomCore/Adaptive-Public-Transport-Control"
+
+[tool.setuptools]
+# The numbered pipeline scripts (01_*.py …) are run from source, not imported;
+# the importable code is the transit/, decision/ and augmentation/ packages plus
+# the config shim.
+packages = ["transit", "transit.app", "decision", "augmentation"]
+py-modules = ["config"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"

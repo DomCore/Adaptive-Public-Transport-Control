@@ -17,11 +17,21 @@ Risk-aware A* з f*(n) = g(n) + h(n) + λ·R(n).
 import json
 import numpy as np
 import pandas as pd
-from heapq import heappush, heappop
 from geopy.distance import geodesic
 from scipy import stats
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+
+# Routing primitives live in the transit package (single source of truth). This
+# script keeps the experiment orchestration: OD sweep, aggregation, stats, plot.
+from transit.routing import (  # noqa: F401  (re-exported for the test-suite)
+    build_graph,
+    heuristic_km,
+    risk_component,
+    astar,
+    path_metrics,
+    sample_od_pairs,
+)
 
 from config import (
     OUT_STOPS_ENRICHED,
@@ -38,194 +48,7 @@ from config import (
 )
 
 
-# ---------- 1. Граф ----------
-
-def build_graph(stops: list[dict], d_max_km: float) -> dict:
-    """Граф зупинок: ребра між парами на відстані <= d_max."""
-    print(f"[04] Побудова графа (d_max={d_max_km} км) ...")
-    graph = {
-        s["id"]: {
-            "lat": s["lat"],
-            "lon": s["lon"],
-            "p_overload": s["p_overload"],
-            "neighbors": {},
-        }
-        for s in stops
-    }
-
-    n = len(stops)
-    edges_count = 0
-    # Оптимізація: попередньо тригонометричний фільтр.
-    # Якщо різниця широт > d_max/111, то і відстань точно > d_max.
-    lats = np.array([s["lat"] for s in stops])
-    lons = np.array([s["lon"] for s in stops])
-    
-    # Поріг у градусах: 1° lat ≈ 111 км; 1° lon ≈ 111 * cos(lat) км
-    lat_threshold = d_max_km / 111.0
-    
-    for i in tqdm(range(n), desc="     edges"):
-        si_id = stops[i]["id"]
-        # Швидкий префільтр по широті
-        nearby_idx = np.where(np.abs(lats[i+1:] - lats[i]) < lat_threshold)[0] + (i + 1)
-        for j in nearby_idx:
-            d = geodesic((lats[i], lons[i]), (lats[j], lons[j])).kilometers
-            if d <= d_max_km:
-                sj_id = stops[j]["id"]
-                graph[si_id]["neighbors"][sj_id] = d
-                graph[sj_id]["neighbors"][si_id] = d
-                edges_count += 1
-
-    avg_neighbors = np.mean([len(g["neighbors"]) for g in graph.values()])
-    isolated = sum(1 for g in graph.values() if len(g["neighbors"]) == 0)
-    print(f"     Ребер: {edges_count:,}")
-    print(f"     Середня кількість сусідів: {avg_neighbors:.1f}")
-    print(f"     Ізольованих зупинок: {isolated}")
-    return graph
-
-
-# ---------- 2. A* ----------
-
-def heuristic_km(graph: dict, n1: str, n2: str) -> float:
-    """Геодезична відстань між вершинами в км. Допустима евристика."""
-    return geodesic(
-        (graph[n1]["lat"], graph[n1]["lon"]),
-        (graph[n2]["lat"], graph[n2]["lon"]),
-    ).kilometers
-
-
-def risk_component(p: float, eps: float = 1e-6) -> float:
-    """R(n) = -ln(1 - P(overload)). eps щоб не було log(0)."""
-    return -np.log(max(1 - p, eps))
-
-
-def astar(
-    graph: dict,
-    start: str,
-    goal: str,
-    lambda_risk: float = 0.0,
-    hard_threshold: float = HARD_EXCLUSION_THRESHOLD,
-) -> list[str] | None:
-    """
-    Risk-aware A*. Мінімізує C(n) = g(n) + λ·sum_R(n), а не просто g(n).
-    Допустима евристика h(n) — геодезична відстань. Relaxation за C.
-    """
-    if start not in graph or goal not in graph:
-        return None
-    if start == goal:
-        return [start]
-
-    open_set = []
-    counter = 0
-    initial_cost = lambda_risk * risk_component(graph[start]["p_overload"])
-    heappush(open_set, (initial_cost + heuristic_km(graph, start, goal),
-                        counter, start))
-
-    came_from = {}
-    cost_score = {start: initial_cost}
-    closed = set()
-
-    while open_set:
-        _, _, current = heappop(open_set)
-        if current in closed:
-            continue
-        closed.add(current)
-
-        if current == goal:
-            path = [current]
-            while current in came_from:
-                current = came_from[current]
-                path.append(current)
-            path.reverse()
-            return path
-
-        for neighbor, edge_dist in graph[current]["neighbors"].items():
-            if neighbor in closed:
-                continue
-            if graph[neighbor]["p_overload"] > hard_threshold:
-                continue
-
-            tentative_cost = (
-                cost_score[current]
-                + edge_dist
-                + lambda_risk * risk_component(graph[neighbor]["p_overload"])
-            )
-
-            if neighbor in cost_score and tentative_cost >= cost_score[neighbor]:
-                continue
-
-            came_from[neighbor] = current
-            cost_score[neighbor] = tentative_cost
-
-            h = heuristic_km(graph, neighbor, goal)
-            f_star = tentative_cost + h
-
-            counter += 1
-            heappush(open_set, (f_star, counter, neighbor))
-
-    return None
-
-
-# ---------- 3. Метрики ----------
-
-def path_metrics(path: list[str], graph: dict) -> dict:
-    if not path or len(path) < 2:
-        return {"length_km": 0.0, "r_overload": 0.0,
-                "total_risk": 0.0, "n_stops": len(path) if path else 0}
-
-    length = 0.0
-    for i in range(len(path) - 1):
-        length += geodesic(
-            (graph[path[i]]["lat"], graph[path[i]]["lon"]),
-            (graph[path[i + 1]]["lat"], graph[path[i + 1]]["lon"]),
-        ).kilometers
-
-    p_list = [graph[v]["p_overload"] for v in path]
-    return {
-        "length_km": float(length),
-        "r_overload": float(np.mean(p_list)),
-        "total_risk": float(sum(risk_component(p) for p in p_list)),
-        "n_stops": len(path),
-    }
-
-
-# ---------- 4. Sampling OD-пар ----------
-
-def sample_od_pairs(
-    stops: list[dict],
-    graph: dict,
-    n_pairs: int,
-    seed: int,
-    min_distance_km: float = 2.0,
-) -> list[tuple[str, str]]:
-    """
-    Випадковий sampling OD-пар з обмеженням мінімальної відстані.
-    
-    min_distance_km гарантує, що пара не сусідня — A* має реально
-    щось вибрати, а не повернути 1-хоповий маршрут.
-    """
-    rng = np.random.default_rng(seed)
-    eligible = [s for s in stops if len(graph[s["id"]]["neighbors"]) > 0]
-    if len(eligible) < 2:
-        raise RuntimeError("Замало неізольованих зупинок.")
-
-    pairs = set()
-    attempts = 0
-    max_attempts = n_pairs * 30
-    while len(pairs) < n_pairs and attempts < max_attempts:
-        attempts += 1
-        a, b = rng.choice(len(eligible), size=2, replace=False)
-        sa, sb = eligible[a], eligible[b]
-        d = geodesic((sa["lat"], sa["lon"]), (sb["lat"], sb["lon"])).kilometers
-        if d < min_distance_km:
-            continue
-        pairs.add((sa["id"], sb["id"]))
-
-    print(f"[04] Згенеровано {len(pairs)} OD-пар "
-          f"(мін. відстань {min_distance_km} км, {attempts} спроб)")
-    return list(pairs)
-
-
-# ---------- 5. Експеримент ----------
+# ---------- Експеримент ----------
 
 def run_experiment(graph: dict, od_pairs: list[tuple[str, str]],
                    lambdas: list[float]) -> pd.DataFrame:

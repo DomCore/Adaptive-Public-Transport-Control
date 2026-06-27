@@ -17,77 +17,20 @@ import json
 import pickle
 import pandas as pd
 
-# Сумісність: BayesianNetwork — назва у pgmpy <= 0.1.25;
-# у нових версіях (>= 0.1.26) клас перейменовано на DiscreteBayesianNetwork.
-try:
-    from pgmpy.models import BayesianNetwork
-except ImportError:  # pragma: no cover — залежить від версії pgmpy
-    from pgmpy.models import DiscreteBayesianNetwork as BayesianNetwork
-
-from pgmpy.estimators import MaximumLikelihoodEstimator
 from pgmpy.inference import VariableElimination
+
+# Core BBN logic lives in the transit package (single source of truth). This
+# script keeps the validation / smoke-test / persistence orchestration.
+from transit.bbn import build_model, repair_unobserved_cpds  # noqa: F401
 
 from config import (
     OUT_DATA_EXTENDED,
     OUT_BBN_MODEL,
     OUT_BBN_META,
-    BBN_NODES,
-    BBN_EDGES,
 )
 
 
-def build_model(df: pd.DataFrame) -> BayesianNetwork:
-    """Будує BBN зі структурою з config і навчає CPD на даних."""
-    print("[02] Створення BayesianNetwork зі структурою ...")
-    print(f"     Вузли:  {BBN_NODES}")
-    print(f"     Ребра:  {BBN_EDGES}")
-
-    # Перевіряємо що всі вузли є в даних
-    missing = [n for n in BBN_NODES if n not in df.columns]
-    if missing:
-        raise ValueError(f"Вузли відсутні в даних: {missing}")
-
-    model = BayesianNetwork(BBN_EDGES)
-
-    print("[02] Підгонка CPD методом Maximum Likelihood ...")
-    model.fit(
-        df[BBN_NODES],
-        estimator=MaximumLikelihoodEstimator,
-    )
-    repair_unobserved_cpds(model)
-    return model
-
-
-def repair_unobserved_cpds(model: BayesianNetwork) -> None:
-    """
-    Замінює NaN-стовпці у CPD рівномірним розподілом.
-
-    Для вузлів з кількома батьками (How_Long_Delayed ← Reason, Boro;
-    Has_Contractor_Notified_Schools ← overload, School_Age_or_PreK) окремі
-    комбінації значень батьків можуть не зустрічатись у даних. MaximumLikelihood
-    лишає для таких комбінацій NaN (0/0). Ми присвоюємо їм рівномірний розподіл
-    (неінформативний пріор), щоб check_model() проходив.
-
-    Ядрові вузли (overload, Reason) не мають неспостережених комбінацій батьків,
-    тому їхні CPD лишаються незмінними — результати маршрутизації зберігаються.
-    """
-    import numpy as np
-    repaired = []
-    for cpd in model.get_cpds():
-        values_2d = cpd.get_values()              # форма (var_card, n_parent_configs)
-        col_sums = values_2d.sum(axis=0)
-        bad = np.isnan(col_sums) | (col_sums == 0)
-        if bad.any():
-            values_2d[:, bad] = 1.0 / values_2d.shape[0]
-            cpd.values = values_2d.reshape(cpd.cardinality)
-            repaired.append((cpd.variable, int(bad.sum())))
-    if repaired:
-        print("[02] Відремонтовано неспостережені CPD-комбінації (рівномірний пріор):")
-        for var, n in repaired:
-            print(f"       {var}: {n} комбінацій")
-
-
-def validate(model: BayesianNetwork) -> dict:
+def validate(model) -> dict:
     """Перевірки моделі."""
     print("[02] Валідація моделі ...")
     is_valid = model.check_model()
@@ -113,7 +56,7 @@ def validate(model: BayesianNetwork) -> dict:
     return summary
 
 
-def smoke_test_inference(model: BayesianNetwork):
+def smoke_test_inference(model):
     """Запускаємо одну query, щоб переконатися що інференс працює."""
     print("\n[02] Smoke-test: інференс P(overload | TimeOfDay='peak_morning') ...")
     inference = VariableElimination(model)

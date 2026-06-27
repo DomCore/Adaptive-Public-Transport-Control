@@ -19,3 +19,6 @@ matplotlib==3.8.2
 
 # UX
 tqdm==4.66.1
+
+# Command-line tool (transit-control). >=0.15 for click 8.x compatibility.
+typer>=0.15

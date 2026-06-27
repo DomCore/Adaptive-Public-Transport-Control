@@ -22,6 +22,9 @@ from sklearn.cluster import KMeans
 from pgmpy.inference import VariableElimination
 from tqdm import tqdm
 
+# Shared inference primitive (single source of truth with the BBN wrapper).
+from transit.bbn import query_overload
+
 from config import (
     INPUT_STOPS_GEOJSON,
     OUT_BBN_MODEL,
@@ -111,22 +114,6 @@ def build_cluster_to_context(df_ny: pd.DataFrame, n_clusters: int) -> dict:
               f"Reason={row['Reason']:30s} "
               f"P(overload)={row['p_overload']:.3f} (n={int(row['n'])})")
     return mapping
-
-
-def query_overload(inference: VariableElimination, evidence: dict) -> float:
-    try:
-        result = inference.query(
-            variables=["overload"],
-            evidence=evidence,
-            show_progress=False,
-        )
-        states = result.state_names["overload"]
-        for i, s in enumerate(states):
-            if str(s) == "1":
-                return float(result.values[i])
-        return float(result.values[-1])
-    except Exception:
-        return 0.5
 
 
 def enrich_with_probabilities(

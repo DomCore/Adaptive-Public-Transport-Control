@@ -35,24 +35,43 @@ augmentation proposed in the thesis.
 
 ```
 adaptive-transit-control/
-├── config.py                  # single source of truth for paths & parameters
+├── transit/                   # installable library + tool (the instrument)
+│   ├── config.py              # single source of truth for paths & parameters
+│   ├── bbn.py                 # BBNModel: build / load / P(overload | context)
+│   ├── routing.py             # TransportGraph + risk-aware A*
+│   ├── decision.py            # re-export of the decision module
+│   ├── cli.py                 # `transit-control` command-line tool (Typer)
+│   └── app/
+│       └── dashboard.py       # interactive Streamlit dashboard
+│
+├── config.py                  # back-compat shim -> transit/config.py
 ├── run_all.py                 # orchestrator for the core pipeline (steps 00-05)
 │
 ├── 00_fetch_prague_stops.py   # GTFS feed  -> data/prague_stops.geojson
 ├── 01_prepare_data.py         # NY Bus CSV -> output/data_extended.parquet
-├── 02_build_bbn_pgmpy.py      # multi-parent BBN (pgmpy) -> bbn_model.pkl
+├── 02_build_bbn_pgmpy.py      # fit the BBN (uses transit.bbn) -> bbn_model.pkl
 ├── 03_enrich_stops.py         # cluster stops + BBN inference -> stops_enriched.json
-├── 04_run_experiment.py       # risk-aware A* sweep over λ -> results + Pareto curve
+├── 04_run_experiment.py       # risk-aware A* sweep over λ (uses transit.routing)
 ├── 05_generate_tables.py      # Markdown tables for the dissertation
 │
 ├── decision/                  # adaptive decision module (a0-a5) + CPD feedback
 │   └── decision_engine.py
 ├── augmentation/              # SMOTE / ADASYN / GAN comparison (needs TensorFlow)
 │   └── compare_augmentation.py
-├── tests/                     # pytest suite (decision engine, A*, preprocessing)
+├── tests/                     # pytest suite (decision engine, A*, package API)
 ├── data/                      # input data (not committed; see data/README.md)
 └── output/                    # generated artefacts (git-ignored)
 ```
+
+The project has three faces over one shared core (the `transit` package):
+
+* a **Python API** — `from transit import BBNModel, TransportGraph, DecisionEngine`;
+* a **command-line tool** — `transit-control` (predict / route / decide / run / serve);
+* an **interactive dashboard** — `transit-control serve`.
+
+The numbered scripts (`00`–`05`) are the low-level, reproducible pipeline; they
+now import their core logic from `transit`, so there is exactly one
+implementation of the BBN, the A\* and the decision rules.
 
 ### Mapping to the dissertation
 
@@ -78,14 +97,28 @@ cd Adaptive-Public-Transport-Control
 
 python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+
+# Install as an editable package — this also puts `transit-control` on your PATH.
+pip install -e .
 ```
 
-The GAN experiment needs TensorFlow on top of the core requirements:
+`pip install -e .` installs the core library and the `transit-control` CLI. Two
+optional extras add the heavier stacks only when you need them:
+
+```bash
+pip install -e ".[app]"    # Streamlit dashboard (transit-control serve)
+pip install -e ".[dev]"    # pytest
+```
+
+The GAN augmentation experiment needs TensorFlow on top:
 
 ```bash
 pip install -r augmentation/requirements-gan.txt
 ```
+
+(If you prefer plain requirement files: `pip install -r requirements.txt` for the
+core, plus `-r requirements-app.txt` for the dashboard and `-r requirements-dev.txt`
+for the tests.)
 
 ## Data
 
@@ -95,6 +128,47 @@ See [`data/README.md`](data/README.md). In short:
 * `data/data.csv` — NY Bus Breakdown & Delays (NYC Open Data, `ez4e-fazm`).
 * `data/prague_stops.geojson` — produced automatically by step 00 from the
   Prague PID GTFS feed.
+
+## The `transit-control` command-line tool
+
+Once the artefacts exist (`transit-control run`), the whole system is driveable
+from one command:
+
+```bash
+transit-control info                       # what's built + a BBN summary
+transit-control predict --time peak_morning --day weekday
+transit-control predict --time peak_evening --cause "Heavy Traffic"
+transit-control decide --p 0.78            # -> a3 + a5 (activate reserve + inform)
+transit-control route --list 10            # browse well-connected stops
+transit-control route --origin U237Z3 --dest U2784Z1 --lambda 2.0
+transit-control run --fetch                # run the full pipeline (steps 0-5)
+transit-control serve                      # launch the dashboard
+```
+
+`predict` returns `P(overload | context)` from the BBN and, by default, the
+control action the decision engine would take. `route` plans a risk-aware path
+on the Prague network for a given λ.
+
+## Interactive dashboard
+
+```bash
+pip install -e ".[app]"     # one-time: Streamlit + pydeck
+transit-control serve       # opens http://localhost:8501
+```
+
+![Interactive dashboard](docs/img/dashboard-overview.jpg)
+
+The dashboard ties the whole method together on one screen:
+
+* pick an **operating context** (time of day, day of week, optional cause);
+* see the BBN's **P(overload)** and the **recommended action** (a0–a5) update live;
+* read the **Bayesian network** structure with the chosen context highlighted;
+* plan a route on a **map of Prague** (stops coloured green→red by overload
+  probability) and compare the shortest route (λ=0) against the risk-aware route,
+  with the length / risk trade-off shown as metrics.
+
+See [`transit/app/README.md`](transit/app/README.md) for a full walkthrough of
+every control and panel.
 
 ## Running the pipeline
 

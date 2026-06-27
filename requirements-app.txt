@@ -1,0 +1,5 @@
+# Interactive dashboard (transit-control serve).
+# Install on top of the core requirements.txt:
+#     pip install -r requirements.txt -r requirements-app.txt
+streamlit>=1.30
+pydeck>=0.8
