@@ -77,13 +77,13 @@ implementation of the BBN, the A\* and the decision rules.
 
 | Component                         | Code                                   | Section |
 |-----------------------------------|----------------------------------------|---------|
-| Transport graph + A\*             | `04_run_experiment.py`                 | 2.1     |
-| Risk term `R(n)`, modified `f*(n)`| `04_run_experiment.py`                 | 2.1.3   |
-| Bayesian Belief Network           | `02_build_bbn_pgmpy.py`                | 2.2     |
-| Data augmentation (SMOTE/GAN)     | `augmentation/compare_augmentation.py` | 2.3, 3.4.2 |
-| Adaptive decision-making (a0-a5)  | `decision/decision_engine.py`          | 2.4     |
-| Cross-domain transfer (NY→Prague) | `03_enrich_stops.py`                   | 3.4.5   |
-| End-to-end experiment             | `run_all.py` (steps 01-05)             | 3.4.5   |
+| Bayesian Belief Network           | `02_build_bbn_pgmpy.py`                | 2.1     |
+| Data augmentation (SMOTE/GAN)     | `augmentation/compare_augmentation.py` | 2.2, 4.4.2 |
+| Transport graph + A\*             | `04_run_experiment.py`                 | 3.1     |
+| Risk term `R(n)`, modified `f*(n)`| `04_run_experiment.py`                 | 3.1.3   |
+| Adaptive decision-making (a0-a5)  | `decision/decision_engine.py`          | 3.2     |
+| Cross-domain transfer (NY→Prague) | `03_enrich_stops.py`                   | 4.4.5   |
+| End-to-end experiment             | `run_all.py` (steps 01-05)             | 4.4.5   |
 
 ---
 
@@ -205,9 +205,9 @@ output/
 ├── bbn_model.pkl               # fitted pgmpy model
 ├── stops_enriched.json         # stops + p_overload + cluster assignment
 ├── results_raw.csv             # every A* run (OD pair × λ)
-├── results_aggregated.csv      # per-λ aggregates (dissertation Table 3.9)
-├── statistical_test.csv        # paired t-test vs λ=0 (Table 3.10)
-├── pareto_curve.png            # length–risk trade-off (Figure 3.2)
+├── results_aggregated.csv      # per-λ aggregates (dissertation Table 4.9)
+├── statistical_test.csv        # paired t-test vs λ=0 (Table 4.10)
+├── pareto_curve.png            # length–risk trade-off (Figure 4.4)
 └── tables_for_dissertation.md  # ready-to-paste Markdown tables
 ```
 

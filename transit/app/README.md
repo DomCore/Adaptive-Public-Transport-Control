@@ -94,11 +94,11 @@ streamlit run transit/app/dashboard.py
 
 | On screen | Code | Dissertation |
 |-----------|------|--------------|
-| Overload probability | `transit.bbn.BBNModel.predict_overload` | §2.2 |
-| Bayesian network DAG | `transit.config.BBN_NODES` / `BBN_EDGES` | §2.2.2 |
-| Recommended action | `transit.decision.DecisionEngine` | §2.4 |
-| Map + two routes | `transit.routing.TransportGraph` (risk-aware A\*) | §2.1.3 |
-| Cross-domain stops | `output/stops_enriched.json` (NY→Prague transfer) | §3.4.5 |
+| Overload probability | `transit.bbn.BBNModel.predict_overload` | §2.1 |
+| Bayesian network DAG | `transit.config.BBN_NODES` / `BBN_EDGES` | §2.1.2 |
+| Recommended action | `transit.decision.DecisionEngine` | §3.2 |
+| Map + two routes | `transit.routing.TransportGraph` (risk-aware A\*) | §3.1.3 |
+| Cross-domain stops | `output/stops_enriched.json` (NY→Prague transfer) | §4.4.5 |
 
 ## Notes & troubleshooting
 
