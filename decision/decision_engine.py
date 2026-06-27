@@ -2,9 +2,9 @@
 decision_engine.py
 ==================
 
-Adaptive decision-making engine (dissertation section 2.4).
+Adaptive decision-making engine (dissertation section 3.2).
 
-The Bayesian Belief Network (section 2.2) outputs a posterior overload
+The Bayesian Belief Network (section 2.1) outputs a posterior overload
 probability ``P(overload | context)`` for a stop / route segment. This module
 maps that probability onto one of six management actions and provides the
 feedback mechanism that keeps the system adaptive.
@@ -16,7 +16,7 @@ Pipeline position
                                    |        observed outcome      |
                           IncrementalCPDUpdater  <----------------+
 
-Action set (section 2.4.2)
+Action set (section 3.2.2)
 --------------------------
     a0  do nothing (maintain current operation)        cost 0.0
     a1  increase service frequency (+1..3 trips)        needs free units
@@ -25,7 +25,7 @@ Action set (section 2.4.2)
     a4  reroute via the risk-aware A* module            most expensive
     a5  inform passengers (push / e-paper signage)      cheap, preventive
 
-Selection rules (section 2.4.3) are threshold-based on ``P(overload)`` and form
+Selection rules (section 3.2.3) are threshold-based on ``P(overload)`` and form
 a cascade so that the strength of the response is proportional to the threat.
 
 The thresholds and the action catalogue are configurable; the defaults
@@ -54,7 +54,7 @@ class Action:
 
 
 # Catalogue keyed by code. Costs are relative (a0 = free, a4 = most expensive),
-# matching the priority ordering described in section 2.4.2.
+# matching the priority ordering described in section 3.2.2.
 ACTIONS: Dict[str, Action] = {
     "a0": Action("a0", "do nothing",
                  "Maintain the current operating mode.", 0.0),
@@ -112,7 +112,7 @@ class Decision:
 # Decision engine
 # --------------------------------------------------------------------------- #
 
-# Default threshold edges (section 2.4.3). Five bands -> [0, .3, .5, .7, .85, 1].
+# Default threshold edges (section 3.2.3). Five bands -> [0, .3, .5, .7, .85, 1].
 DEFAULT_THRESHOLDS: Sequence[float] = (0.3, 0.5, 0.7, 0.85)
 
 
@@ -168,7 +168,7 @@ class DecisionEngine:
             Posterior probability of overload from the BBN, in [0, 1].
         free_units_available:
             Whether spare vehicles exist. Governs the a1/a2 vs a3 choice in the
-            mid/high bands, per section 2.4.3.
+            mid/high bands, per section 3.2.3.
         context:
             Optional evidence vector passed to ``reroute_fn`` for action a4.
         """
@@ -249,7 +249,7 @@ class DecisionEngine:
 
 
 # --------------------------------------------------------------------------- #
-# Feedback: incremental Bayesian CPD update (section 2.4.4)
+# Feedback: incremental Bayesian CPD update (section 3.2.4)
 # --------------------------------------------------------------------------- #
 
 
@@ -258,7 +258,7 @@ class IncrementalCPDUpdater:
     Forgetting-factor update of a conditional probability vector.
 
     Implements ``CPD_new = lambda * CPD_old + (1 - lambda) * CPD_observed``
-    (section 2.4.4), where ``lambda`` is the forgetting factor:
+    (section 3.2.4), where ``lambda`` is the forgetting factor:
 
         * lambda = 0.85 -> faster adaptation, less stable
         * lambda = 0.95 -> slower adaptation, more stable

@@ -1,4 +1,4 @@
-"""Tests for the adaptive decision module (dissertation section 2.4)."""
+"""Tests for the adaptive decision module (dissertation section 3.2)."""
 
 import pytest
 
@@ -10,7 +10,7 @@ def engine():
     return DecisionEngine()
 
 
-# --- band selection (section 2.4.3) ----------------------------------- #
+# --- band selection (section 3.2.3) ----------------------------------- #
 
 
 @pytest.mark.parametrize("p, expected", [
@@ -86,7 +86,7 @@ def test_reroute_callback_invoked():
     assert "rerouted" in d.rationale
 
 
-# --- incremental CPD update (section 2.4.4) --------------------------- #
+# --- incremental CPD update (section 3.2.4) --------------------------- #
 
 
 def test_cpd_update_blends_and_normalises():

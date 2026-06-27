@@ -13,7 +13,7 @@ The system couples two independent, real-world data sources:
   * Prague public-transport stops (GTFS feed, PID) - the routing graph.
 
 See README.md for the mapping between these parameters and the dissertation
-(sections 2.1-2.2 and 3.4.5).
+(sections 2.1, 3.1 and 4.4.5).
 """
 
 import sys
@@ -66,7 +66,7 @@ TIME_OF_DAY_BINS = [
 
 
 # ---------- Bayesian Belief Network ----------
-# Eight-node multi-parent network (dissertation sections 2.2.2 and 3.4.5).
+# Eight-node multi-parent network (dissertation sections 2.1.2 and 4.4.5).
 #
 # The "core" sub-network that drives routing is unchanged:
 #     TimeOfDay, Reason -> overload      (with Reason <- TimeOfDay, DayOfWeek)
@@ -75,7 +75,7 @@ TIME_OF_DAY_BINS = [
 # lookup and is d-separated from everything else. The four extra nodes below are
 # therefore added strictly as descendants / non-ancestors of `overload` and
 # `Reason`, so every routing number and the marginal smoke-test are preserved
-# exactly while the network matches the conceptual model in section 2.2.2.
+# exactly while the network matches the conceptual model in section 2.1.2.
 # Every node has at most two parents, so the treewidth stays 2 (claim "w = 2").
 BBN_NODES = [
     "TimeOfDay",

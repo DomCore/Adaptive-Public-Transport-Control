@@ -1,5 +1,5 @@
 """
-transit.routing — risk-aware A* routing primitives (dissertation section 2.1.3).
+transit.routing — risk-aware A* routing primitives (dissertation section 3.1.3).
 
 This module is the single source of truth for the routing core:
 

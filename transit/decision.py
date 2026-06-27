@@ -2,7 +2,7 @@
 transit.decision — re-export of the adaptive decision module.
 
 The decision engine's canonical implementation lives in the top-level
-``decision`` package (dissertation section 2.4), which the test-suite and the
+``decision`` package (dissertation section 3.2), which the test-suite and the
 README already reference as ``from decision import DecisionEngine``. This module
 re-exports it under the ``transit`` namespace so the library has one tidy public
 surface (``from transit import DecisionEngine``) without duplicating code.

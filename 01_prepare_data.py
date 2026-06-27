@@ -150,7 +150,7 @@ def add_delay_category(df: pd.DataFrame) -> pd.DataFrame:
     Сире текстове поле How_Long_Delayed парситься у хвилини
     (parse_delay_minutes) і бінується у 4 категорії. Цей вузол є нащадком
     Reason у БМД (а не предком overload), тому НЕ впливає на маршрутизацію —
-    додається для відповідності концептуальній структурі (підрозділ 2.2.2).
+    додається для відповідності концептуальній структурі (підрозділ 2.1.2).
     """
     print("[01] Додавання вузла 'How_Long_Delayed' (дискретизація затримки) ...")
     minutes = df["How_Long_Delayed"].apply(parse_delay_minutes)

@@ -1,5 +1,5 @@
 """
-transit.bbn — Bayesian Belief Network: build, persist, query (section 2.2).
+transit.bbn — Bayesian Belief Network: build, persist, query (section 2.1).
 
 Single source of truth for the BBN. The numbered builder script
 (``02_build_bbn_pgmpy.py``) imports :func:`build_model` and

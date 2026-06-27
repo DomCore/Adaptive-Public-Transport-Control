@@ -1,5 +1,5 @@
 """
-Behavioural tests for the risk-aware A* (dissertation section 2.1.3).
+Behavioural tests for the risk-aware A* (dissertation section 3.1.3).
 
 The key property: with lambda = 0 the planner minimises distance only, while a
 large lambda makes it prefer a longer but lower-overload-probability route.

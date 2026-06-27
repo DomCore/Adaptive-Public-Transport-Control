@@ -3,7 +3,7 @@
 =====================
 
 Форматує результати у Markdown-таблиці для копі-пасту в дисертацію
-(розділ 3.4.5).
+(розділ 4.4.5).
 
 Вхід:  output/results_aggregated.csv
        output/statistical_test.csv
@@ -15,9 +15,9 @@ from config import OUT_RESULTS_AGG, OUT_STATS, OUT_TABLES_MD, ALPHA
 
 
 def fmt_table_3_6(df_agg: pd.DataFrame) -> str:
-    """Таблиця 3.9: метрики маршруту по λ."""
+    """Таблиця 4.9: метрики маршруту по λ."""
     lines = [
-        "## Таблиця 3.9 — Залежність метрик маршруту від параметра λ",
+        "## Таблиця 4.9 — Залежність метрик маршруту від параметра λ",
         "",
         "| λ    | R_overload | Δ довжини, % | Coverage | n_stops |",
         "|------|------------|--------------|----------|---------|",
@@ -39,7 +39,7 @@ def fmt_table_3_6(df_agg: pd.DataFrame) -> str:
 def fmt_table_stats(df_stats: pd.DataFrame, alpha: float) -> str:
     """Парний t-тест."""
     lines = [
-        "## Таблиця 3.10 — Парний t-тест: значущість зменшення R_overload",
+        "## Таблиця 4.10 — Парний t-тест: значущість зменшення R_overload",
         "",
         "| λ    | n   | Mean(λ=0) | Mean(λ) | Reduction | t-stat | p-value | Sig. (α=0.05) |",
         "|------|-----|-----------|---------|-----------|--------|---------|---------------|",
@@ -68,7 +68,7 @@ def fmt_table_stats(df_stats: pd.DataFrame, alpha: float) -> str:
 
 
 def fmt_dissertation_text(df_agg: pd.DataFrame, df_stats: pd.DataFrame) -> str:
-    """Готовий шаблон тексту для розділу 3.4.5 з підставленими цифрами."""
+    """Готовий шаблон тексту для розділу 4.4.5 з підставленими цифрами."""
     if len(df_agg) == 0:
         return ""
 
@@ -94,7 +94,7 @@ def fmt_dissertation_text(df_agg: pd.DataFrame, df_stats: pd.DataFrame) -> str:
         df_stats.get("significant_at_alpha", False) == True
     ]["lambda"].tolist() if "significant_at_alpha" in df_stats.columns else []
 
-    text = f"""## Готовий шаблон для розділу 3.4.5
+    text = f"""## Готовий шаблон для розділу 4.4.5
 
 **Інтерпретація результатів.** Зі зростанням λ спостерігається монотонне 
 зменшення R_overload (з {base_r:.3f} при λ=0 до {high_r:.3f} при λ={high_lam:.0f}, 
@@ -120,7 +120,7 @@ def main():
     df_stats = pd.read_csv(OUT_STATS)
 
     parts = [
-        "# Таблиці для дисертації — підрозділ 3.4.5",
+        "# Таблиці для дисертації — підрозділ 4.4.5",
         "",
         "Згенеровано автоматично скриптом `05_generate_tables.py`.",
         "",
